@@ -1,0 +1,39 @@
+# Root-level ignores
+__pycache__/
+*.py[cod]
+*.log
+*.sqlite3
+.env
+.env.*
+
+# Frontend (Node.js)
+frontend/node_modules/
+frontend/.env
+frontend/.next/
+frontend/.turbo/
+frontend/dist/
+frontend/build/
+frontend/.DS_Store
+
+# Backend (Python)
+backend/__pycache__/
+backend/*.pyc
+backend/env/
+backend/venv/
+backend/.env
+backend/.DS_Store
+
+# VSCode and system files
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Backup and swap files
+*~
+*.swp
+*.swo
+
+# Tool caches
+.mypy_cache/
+.pytest_cache/
+.pyright/
