@@ -91,29 +91,26 @@ def create_or_update_note():
         cur = conn.cursor()
 
         if note_link:
+            # Update existing note using short ID
             cur.execute(
                 "UPDATE notes SET notes = %s, date = %s WHERE note_link = %s",
                 (note, datetime.utcnow(), note_link)
             )
         else:
-            note_link = generate_unique_link()
+            # Create new note with a generated short ID
+            short = generate_unique_link()
             cur.execute(
                 "INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s)",
-                (note, datetime.utcnow(), note_link)
+                (note, datetime.utcnow(), short)
             )
+            note_link = short  # Assign new short ID
 
         conn.commit()
         cur.close()
         conn.close()
 
-        # Only return the short note_id (e.g., "LsNr9M")
+        # Return only the short note ID
         return jsonify({"note_link": note_link}), 201
-    except Exception as e:
-        return jsonify({"error": "Failed to save note", "details": str(e)}), 500
 
-        cur.close()
-        conn.close()
-
-        return jsonify({"note_link": full_link}), 201
     except Exception as e:
         return jsonify({"error": "Failed to save note", "details": str(e)}), 500
