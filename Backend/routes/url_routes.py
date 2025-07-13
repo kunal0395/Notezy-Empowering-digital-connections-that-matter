@@ -5,6 +5,9 @@ from datetime import datetime
 
 url_bp = Blueprint('url', __name__)
 
+import os
+BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+
 @url_bp.route('/shorten', methods=['POST'])
 def shorten_url_route():
     """
@@ -52,11 +55,13 @@ def redirect_to_long_url(short_path):
     Redirects the short URL to the original long URL.
     """
     try:
+        short_url = f"{BASE_URL}/{short_path}"
+
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT user_url FROM url WHERE new_url = %s",
-            (f"http://127.0.0.1:5000/{short_path}",)
+            (short_url,)
         )
         result = cursor.fetchone()
         cursor.close()
@@ -67,5 +72,7 @@ def redirect_to_long_url(short_path):
         else:
             return jsonify({"error": "URL not found"}), 404
 
+    except Exception as e:
+        return jsonify({"error": f"Database error: {e}"}), 500
     except Exception as e:
         return jsonify({"error": f"Database error: {e}"}), 500
