@@ -60,10 +60,15 @@ def save_note():
 
 @note_bp.route('/get_note/<note_id>', methods=['GET'])
 def get_note(note_id):
+    """
+    Retrieve a note by its short ID.
+    """
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT notes FROM notes WHERE note_link = %s", (note_id,))
+
+        # Look up by short ID, not full URL
+        cur.execute("SELECT notes FROM notes WHERE note_link LIKE %s", (f"%/{note_id}",))
         result = cur.fetchone()
         cur.close()
         conn.close()
@@ -74,6 +79,7 @@ def get_note(note_id):
             return jsonify({"error": "Note not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @note_bp.route('/create', methods=['POST'])
 def create_or_update_note():
