@@ -60,16 +60,14 @@ def save_note():
 
 @note_bp.route('/get_note/<note_id>', methods=['GET'])
 def get_note(note_id):
-    """
-    Retrieve a note by its short ID.
-    """
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Look up by short ID, not full URL
+        # Match exact short ID
         cur.execute("SELECT notes FROM notes WHERE note_link = %s", (note_id,))
         result = cur.fetchone()
+
         cur.close()
         conn.close()
 
