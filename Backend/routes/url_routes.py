@@ -51,18 +51,12 @@ def shorten_url_route():
 
 @url_bp.route('/u/<short_path>', methods=['GET'])
 def redirect_to_long_url(short_path):
-    """
-    Redirects the short URL to the original long URL.
-    """
     try:
-        short_url = f"{BASE_URL}/{short_path}"
+        short_url = f"{os.getenv('BACKEND_BASE_URL')}/u/{short_path}"
 
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT user_url FROM url WHERE new_url = %s",
-            (short_url,)
-        )
+        cursor.execute("SELECT user_url FROM url WHERE new_url = %s", (short_url,))
         result = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -71,8 +65,5 @@ def redirect_to_long_url(short_path):
             return redirect(result[0], code=302)
         else:
             return jsonify({"error": "URL not found"}), 404
-
-    except Exception as e:
-        return jsonify({"error": f"Database error: {e}"}), 500
     except Exception as e:
         return jsonify({"error": f"Database error: {e}"}), 500
