@@ -6,92 +6,105 @@ import os
 
 note_bp = Blueprint('note', __name__)
 
-# Use environment variable for base URL or fallback to localhost
-BASE_URL = os.getenv("BASE_URL", "http://localhost:5000")
+# Env vars (frontend and backend base URLs)
+FRONTEND_BASE = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+BACKEND_BASE = os.getenv("BACKEND_BASE_URL", "http://localhost:5000")
 
-
+# -----------------------
+# GET: fetch note by random link (used by browser direct hit)
+# -----------------------
 @note_bp.route('/notes/<random_link>', methods=['GET'])
-def get_note_by_link(random_link):
-    """
-    Retrieve note content by full note_link.
-    """
-    full_link = f"{BASE_URL}/notes/{random_link}"
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT notes FROM notes WHERE note_link = %s", (full_link,))
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
+def get_note_by_random_link(random_link):
+    full_link = f"{FRONTEND_BASE}/{random_link}"  # must match what frontend sends
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT notes FROM notes WHERE note_link = %s", (full_link,))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
 
-    if result:
-        return jsonify({"note": result[0]})
-    else:
-        return jsonify({"error": "Note not found"}), 404
+        if result:
+            return jsonify({"note": result[0]})
+        else:
+            return jsonify({"error": "Note not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-
+# -----------------------
+# POST: Save new note
+# -----------------------
 @note_bp.route('/notes', methods=['POST'])
 def save_note():
-    """
-    Save a new note with a unique random link.
-    """
     data = request.json
-    note = data['note']
-    random_link = generate_unique_link()
-    note_link = f"{BASE_URL}/notes/{random_link}"
-    date = datetime.now()
+    note = data.get('note', '')
+    short = generate_unique_link()
+    full_link = f"{FRONTEND_BASE}/{short}"
+    date = datetime.utcnow()
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    query = "INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s) RETURNING note_id"
-    cursor.execute(query, (note, date, note_link))
-    note_id = cursor.fetchone()[0]
-    conn.commit()
-    cursor.close()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s) RETURNING note_id",
+            (note, date, full_link)
+        )
+        note_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
 
-    return jsonify({"note_id": note_id, "note_link": note_link})
+        return jsonify({"note_id": note_id, "note_link": full_link}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-
+# -----------------------
+# POST: Create or Update note
+# -----------------------
 @note_bp.route('/create', methods=['POST'])
 def create_or_get_note():
-    """
-    Create a new note or update an existing note if note_link is provided.
-    """
     data = request.json
     notes = data.get('notes', '')
-    note_link = data.get('note_link')  # full link from frontend if exists
+    note_link = data.get('note_link')  # full link sent from frontend
+    now = datetime.utcnow()
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
         if note_link:
-            query = "UPDATE notes SET notes = %s, date = %s WHERE note_link = %s;"
-            cursor.execute(query, (notes, datetime.utcnow(), note_link))
+            # Update existing
+            cursor.execute(
+                "UPDATE notes SET notes = %s, date = %s WHERE note_link = %s",
+                (notes, now, note_link)
+            )
         else:
-            # Generate and store full link
+            # Create new
             short = generate_unique_link()
-            note_link = f"{BASE_URL}/notes/{short}"
-            query = "INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s);"
-            cursor.execute(query, (notes, datetime.utcnow(), note_link))
+            note_link = f"{FRONTEND_BASE}/{short}"
+            cursor.execute(
+                "INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s)",
+                (notes, now, note_link)
+            )
 
         conn.commit()
         cursor.close()
         conn.close()
 
-        return jsonify({'message': 'Note created', 'note_link': note_link}), 201
+        return jsonify({"message": "Note created", "note_link": note_link}), 201
     except Exception as e:
         return jsonify({"error": "Failed to save note", "details": str(e)}), 500
 
-
+# -----------------------
+# GET: /get_note/<note_id>
+# -----------------------
 @note_bp.route('/get_note/<note_id>', methods=['GET'])
 def get_note(note_id):
     """
-    Retrieve a note's content by its short ID.
+    Used by frontend to load note content from short id
     """
+    full_link = f"{FRONTEND_BASE}/{note_id}"
     try:
-        full_link = f"{BASE_URL}/notes/{note_id}"
-
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("SELECT notes FROM notes WHERE note_link = %s", (full_link,))
