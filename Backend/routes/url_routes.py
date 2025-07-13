@@ -49,7 +49,7 @@ def shorten_url_route():
     except Exception as e:
         return jsonify({"error": f"Database error: {e}"}), 500
 
-@url_bp.route('/<short_path>', methods=['GET'])
+@url_bp.route('/u/<short_path>', methods=['GET'])
 def redirect_to_long_url(short_path):
     """
     Redirects the short URL to the original long URL.
