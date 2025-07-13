@@ -61,53 +61,15 @@ def save_note():
 # -----------------------
 # POST: Create or Update note
 # -----------------------
-@note_bp.route('/create', methods=['POST'])
-def create_or_get_note():
-    data = request.json
-    notes = data.get('notes', '')
-    note_link = data.get('note_link')  # full link sent from frontend
-    now = datetime.utcnow()
-
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        if note_link:
-            # Update existing
-            cursor.execute(
-                "UPDATE notes SET notes = %s, date = %s WHERE note_link = %s",
-                (notes, now, note_link)
-            )
-        else:
-            # Create new
-            short = generate_unique_link()
-            note_link = f"{FRONTEND_BASE}/{short}"
-            cursor.execute(
-                "INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s)",
-                (notes, now, note_link)
-            )
-
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        return jsonify({"message": "Note created", "note_link": note_link}), 201
-    except Exception as e:
-        return jsonify({"error": "Failed to save note", "details": str(e)}), 500
-
-# -----------------------
-# GET: /get_note/<note_id>
-# -----------------------
 @note_bp.route('/get_note/<note_id>', methods=['GET'])
 def get_note(note_id):
     """
-    Used by frontend to load note content from short id
+    Retrieve a note's content by its short ID.
     """
-    full_link = f"{FRONTEND_BASE}/{note_id}"
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT notes FROM notes WHERE note_link = %s", (full_link,))
+        cur.execute("SELECT notes FROM notes WHERE note_link = %s", (note_id,))
         result = cur.fetchone()
         conn.close()
 
@@ -117,3 +79,37 @@ def get_note(note_id):
             return jsonify({'error': 'Note not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@note_bp.route('/create', methods=['POST'])
+def create_or_get_note():
+    """
+    Create or update a note based on the short note_link.
+    """
+    data = request.json
+    notes = data.get('notes', '')
+    note_link = data.get('note_link')  # e.g., xJRQcm
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if note_link:
+            cursor.execute(
+                "UPDATE notes SET notes = %s, date = %s WHERE note_link = %s;",
+                (notes, datetime.utcnow(), note_link),
+            )
+        else:
+            note_link = generate_unique_link()
+            cursor.execute(
+                "INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s);",
+                (notes, datetime.utcnow(), note_link),
+            )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({'message': 'Note saved', 'note_link': note_link}), 201
+    except Exception as e:
+        return jsonify({"error": "Failed to save note", "details": str(e)}), 500
