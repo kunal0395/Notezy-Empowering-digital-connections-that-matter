@@ -68,7 +68,7 @@ def get_note(note_id):
         cur = conn.cursor()
 
         # Look up by short ID, not full URL
-        cur.execute("SELECT notes FROM notes WHERE note_link LIKE %s", (f"%/{note_id}",))
+        cur.execute("SELECT notes FROM notes WHERE note_link = %s", (note_id,))
         result = cur.fetchone()
         cur.close()
         conn.close()
@@ -80,32 +80,37 @@ def get_note(note_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @note_bp.route('/create', methods=['POST'])
 def create_or_update_note():
     data = request.json
     note = data.get("notes", "")
-    note_link = data.get("note_link")
+    note_link = data.get("note_link")  # This should be like "LsNr9M"
 
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
         if note_link:
-            full_link = f"{FRONTEND_BASE}/{note_link}"
             cur.execute(
                 "UPDATE notes SET notes = %s, date = %s WHERE note_link = %s",
-                (note, datetime.utcnow(), full_link)
+                (note, datetime.utcnow(), note_link)
             )
         else:
-            short = generate_unique_link()
-            full_link = f"{FRONTEND_BASE}/{short}"
+            note_link = generate_unique_link()
             cur.execute(
                 "INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s)",
-                (note, datetime.utcnow(), full_link)
+                (note, datetime.utcnow(), note_link)
             )
 
         conn.commit()
+        cur.close()
+        conn.close()
+
+        # Only return the short note_id (e.g., "LsNr9M")
+        return jsonify({"note_link": note_link}), 201
+    except Exception as e:
+        return jsonify({"error": "Failed to save note", "details": str(e)}), 500
+
         cur.close()
         conn.close()
 
