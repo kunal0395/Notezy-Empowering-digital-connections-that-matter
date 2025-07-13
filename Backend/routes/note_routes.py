@@ -58,14 +58,8 @@ def save_note():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# -----------------------
-# GET: Fetch note by short ID
-# -----------------------
 @note_bp.route('/get_note/<note_id>', methods=['GET'])
 def get_note(note_id):
-    """
-    Retrieve note by its short ID (e.g., 'xJRQcm')
-    """
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -81,33 +75,23 @@ def get_note(note_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# -----------------------
-# POST: Create or update note
-# -----------------------
 @note_bp.route('/create', methods=['POST'])
 def create_or_update_note():
     data = request.json
     note = data.get("notes", "")
-    note_link = data.get("note_link")  # short ID, if updating
+    note_link = data.get("note_link")
 
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
         if note_link:
-            # update existing note
-            cur.execute(
-                "UPDATE notes SET notes = %s, date = %s WHERE note_link = %s",
-                (note, datetime.utcnow(), note_link),
-            )
+            cur.execute("UPDATE notes SET notes = %s, date = %s WHERE note_link = %s",
+                        (note, datetime.utcnow(), note_link))
         else:
-            # insert new note with random short link
             note_link = generate_unique_link()
-            cur.execute(
-                "INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s)",
-                (note, datetime.utcnow(), note_link),
-            )
+            cur.execute("INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s)",
+                        (note, datetime.utcnow(), note_link))
 
         conn.commit()
         cur.close()
@@ -116,3 +100,4 @@ def create_or_update_note():
         return jsonify({"note_link": note_link}), 201
     except Exception as e:
         return jsonify({"error": "Failed to save note", "details": str(e)}), 500
+
