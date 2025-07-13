@@ -10,12 +10,13 @@ const NoteApp = () => {
   const editorRef = useRef(null);
   const saveTimeout = useRef(null);
 
+  const baseURL = import.meta.env.VITE_API_BASE_URL;
+
   useEffect(() => {
-    // Helper: fetch note content from backend
     const fetchNote = async (id) => {
       try {
         setIsLoading(true);
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get_note/${id}`);
+        const response = await axios.get(`${baseURL}/get_note/${id}`);
         const content = response.data.content || response.data.note || "";
         setNote(content);
       } catch (error) {
@@ -30,15 +31,17 @@ const NoteApp = () => {
       }
     };
 
-    // Helper: save note content to backend
     const saveNote = async () => {
-      if (!note.trim()) return; // don't save empty note
+      if (!note.trim()) return;
       try {
-        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/create`, {
+        const response = await axios.post(`${baseURL}/create`, {
           notes: note,
-          note_link: savedNoteId || noteId,
+          note_link: savedNoteId
+            ? `${window.location.origin}/${savedNoteId}`
+            : undefined,
         });
-        const newId = response.data.note_link?.split("/").pop();
+        const fullLink = response.data.note_link;
+        const newId = fullLink?.split("/").pop();
         if (!savedNoteId && newId) {
           setSavedNoteId(newId);
           window.history.pushState({}, "", `/${newId}`);
@@ -49,31 +52,17 @@ const NoteApp = () => {
     };
 
     if (noteId) {
-      // If noteId changed: fetch the note
       fetchNote(noteId);
     }
 
-    // Clear any existing timeout (for debounce)
-    if (saveTimeout.current) {
-      clearTimeout(saveTimeout.current);
-    }
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => saveNote(), 1000);
 
-    // Set debounce to save note 1s after typing stops
-    saveTimeout.current = setTimeout(() => {
-      saveNote();
-    }, 1000);
-
-    // Cleanup on unmount or note/noteId change
     return () => clearTimeout(saveTimeout.current);
   }, [note, noteId, savedNoteId]);
 
-  // Sync editor's contentEditable div with note state
   useEffect(() => {
-    if (
-      editorRef.current &&
-      !isLoading &&
-      editorRef.current.innerText !== note
-    ) {
+    if (editorRef.current && !isLoading && editorRef.current.innerText !== note) {
       editorRef.current.innerText = note;
     }
   }, [note, isLoading]);
