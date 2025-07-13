@@ -58,7 +58,11 @@ const Userscount = () => {
           >
             <div className="mb-4">{icon}</div>
             <div className="text-4xl font-bold text-gray-900">
-              {value !== null ? `${value}+` : "100+"}
+              {value !== null
+                ? value >= 1000
+                ? `${value.toLocaleString()}+`
+                  : "1k+"
+                  : "1k+"}
             </div>
             <p className="text-gray-600 mt-2">{description}</p>
           </div>
