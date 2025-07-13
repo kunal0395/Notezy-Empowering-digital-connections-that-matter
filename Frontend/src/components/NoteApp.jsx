@@ -3,21 +3,22 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 
 const NoteApp = () => {
-  const { noteId } = useParams();
+  const { noteId } = useParams();  // e.g. "xJRQcm"
   const [note, setNote] = useState("");
-  const [savedNoteId, setSavedNoteId] = useState(null);
+  const [savedNoteId, setSavedNoteId] = useState(noteId || null);
   const [isLoading, setIsLoading] = useState(false);
   const editorRef = useRef(null);
   const saveTimeout = useRef(null);
 
   const baseURL = import.meta.env.VITE_API_BASE_URL;
 
+  // Fetch note
   useEffect(() => {
     const fetchNote = async (id) => {
       try {
         setIsLoading(true);
         const response = await axios.get(`${baseURL}/get_note/${id}`);
-        const content = response.data.content || response.data.note || "";
+        const content = response.data.content || "";
         setNote(content);
       } catch (error) {
         if (error.response?.status === 404) {
@@ -31,6 +32,11 @@ const NoteApp = () => {
       }
     };
 
+    if (noteId) fetchNote(noteId);
+  }, [noteId]);
+
+  // Auto-save with debounce
+  useEffect(() => {
     const saveNote = async () => {
       if (!note.trim()) return;
       try {
@@ -39,9 +45,7 @@ const NoteApp = () => {
           note_link: savedNoteId || noteId,
         });
 
-        const fullLink = response.data.note_link;
-        const newId = fullLink?.split("/").pop();
-
+        const newId = response.data.note_link;
         if (!savedNoteId && newId) {
           setSavedNoteId(newId);
           window.history.pushState({}, "", `/${newId}`);
@@ -51,16 +55,13 @@ const NoteApp = () => {
       }
     };
 
-    if (noteId) {
-      fetchNote(noteId);
-    }
-
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => saveNote(), 1000);
 
     return () => clearTimeout(saveTimeout.current);
   }, [note, noteId, savedNoteId]);
 
+  // Sync DOM and state
   useEffect(() => {
     if (editorRef.current && !isLoading && editorRef.current.innerText !== note) {
       editorRef.current.innerText = note;
@@ -68,7 +69,7 @@ const NoteApp = () => {
   }, [note, isLoading]);
 
   const handleInput = (e) => {
-    setNote(e.target.innerText);
+    setNote(e.currentTarget.innerText);
   };
 
   return (
