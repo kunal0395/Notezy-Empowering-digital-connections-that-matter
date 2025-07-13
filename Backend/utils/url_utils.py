@@ -1,8 +1,11 @@
 import random
+import os
 import string
 import psycopg2
 from datetime import date
 from config import DATABASE_CONFIG
+
+BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173") 
 
 def generate_short_url(length: int = 6) -> str:
     """
@@ -16,7 +19,7 @@ def generate_short_url(length: int = 6) -> str:
     """
     characters = string.ascii_letters + string.digits
     random_part = ''.join(random.choices(characters, k=length))
-    return f"http://127.0.0.1:5000/{random_part}"
+    return f"{BASE_URL}/{random_part}"
 
 
 def create_db_connection():
