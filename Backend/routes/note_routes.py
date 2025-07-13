@@ -75,7 +75,7 @@ def create_or_get_note():
     except Exception as e:
         return jsonify({"error": "Failed to save note", "details": str(e)}), 500
 
-@note_bp.route('/get_note/<note_link>')
+@note_bp.route('/get_note/<note_link>')  
 def get_note(note_link):
     """
     Retrieve a note's content by its unique link.
