@@ -1,12 +1,16 @@
-from dotenv import load_dotenv
 import os
+from urllib.parse import urlparse
 
-load_dotenv()  # Load environment variables from .env file
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL is None:
+    raise Exception("DATABASE_URL not set")
+
+result = urlparse(DATABASE_URL)
 
 DATABASE_CONFIG = {
-    "dbname": os.getenv("DB_NAME"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-    "host": os.getenv("DB_HOST"),
-    "port": os.getenv("DB_PORT"),
+    "dbname": result.path[1:],
+    "user": result.username,
+    "password": result.password,
+    "host": result.hostname,
+    "port": result.port,
 }
