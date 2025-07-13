@@ -19,7 +19,7 @@ def generate_short_url(length: int = 6) -> str:
     """
     characters = string.ascii_letters + string.digits
     random_part = ''.join(random.choices(characters, k=length))
-    return f"{BASE_URL}/{random_part}"
+    return f"{BASE_URL}/u/{random_part}"
 
 
 def create_db_connection():
