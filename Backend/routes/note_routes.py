@@ -91,19 +91,25 @@ def create_or_update_note():
         conn = get_db_connection()
         cur = conn.cursor()
 
-        if note_link:
-            cur.execute("UPDATE notes SET notes = %s, date = %s WHERE note_link = %s",
-                        (note, datetime.utcnow(), note_link))
-        else:
-            note_link = generate_unique_link()
-            cur.execute("INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s)",
-                        (note, datetime.utcnow(), note_link))
+       if note_link:
+    full_link = f"{FRONTEND_BASE}/{note_link}"
+    cur.execute(
+        "UPDATE notes SET notes = %s, date = %s WHERE note_link = %s",
+        (note, datetime.utcnow(), full_link)
+    )
+else:
+    short = generate_unique_link()
+    full_link = f"{FRONTEND_BASE}/{short}"
+    cur.execute(
+        "INSERT INTO notes (notes, date, note_link) VALUES (%s, %s, %s)",
+        (note, datetime.utcnow(), full_link)
+    )
 
         conn.commit()
         cur.close()
         conn.close()
 
-        return jsonify({"note_link": note_link}), 201
+        return jsonify({"note_link": full_link}), 201
     except Exception as e:
         return jsonify({"error": "Failed to save note", "details": str(e)}), 500
 
