@@ -34,14 +34,14 @@ const NoteApp = () => {
     const saveNote = async () => {
       if (!note.trim()) return;
       try {
-        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/create`, {
+        const response = await axios.post(`${baseURL}/create`, {
           notes: note,
-           note_link: savedNoteId || noteId, // this is just 'xJRQcm'
-            });
-          const newId = response.data.note_link;
+          note_link: savedNoteId || noteId,
+        });
 
         const fullLink = response.data.note_link;
         const newId = fullLink?.split("/").pop();
+
         if (!savedNoteId && newId) {
           setSavedNoteId(newId);
           window.history.pushState({}, "", `/${newId}`);
