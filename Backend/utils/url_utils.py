@@ -18,8 +18,7 @@ def generate_short_url(length: int = 6) -> str:
         str: Generated short URL with local domain.
     """
     characters = string.ascii_letters + string.digits
-    random_part = ''.join(random.choices(characters, k=length))
-    return f"{BASE_URL}/u/{random_part}"
+    return ''.join(random.choices(characters, k=length))
 
 
 def create_db_connection():
